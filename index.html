@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dr.Mohamed Yousef — Social Media Analysis & Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #29483F; --green-2: #45695F; --green-3: #345a4f;
+    --beige: #F1ECE5; --ink: #25292B; --red: #B52132; --gold: #F2C94C;
+    --muted-l: rgba(241,236,229,.72);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #12201c; overflow: hidden; font-family: Inter, system-ui, sans-serif; color: var(--beige); }
+
+  /* fixed 1280x720 stage, scaled to fit */
+  #viewport { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #stage { width: 1280px; height: 720px; position: relative; transform-origin: center center; flex: none;
+    border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  .slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility .5s; padding: 64px 72px; }
+  .slide.active { opacity: 1; visibility: visible; }
+  .green { background: var(--green); color: var(--beige); }
+  .beige { background: var(--beige); color: var(--ink); }
+
+  /* entrance animations */
+  .a { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--d, 0) * 1ms); }
+  .a.left { transform: translateX(-30px); } .a.right { transform: translateX(30px); } .a.zoom { transform: scale(.94); }
+  .slide.active .a { opacity: 1; transform: none; }
+
+  h1, h2 { font-family: "DM Serif Display", Georgia, serif; font-weight: 400; letter-spacing: .2px; }
+  h2 { font-size: 44px; line-height: 1.1; margin-bottom: 18px; }
+  .kicker { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); font-weight: 700; margin-bottom: 10px; }
+  .beige .kicker { color: var(--red); }
+  p.lead { font-size: 21px; line-height: 1.5; font-weight: 500; max-width: 1080px; }
+
+  /* highlighted numbers */
+  .hl { color: var(--gold); font-weight: 800; white-space: nowrap; position: relative; }
+  .hl::after { content: ""; position: absolute; left: -3px; right: -3px; bottom: 1px; height: 38%; background: rgba(242,201,76,.22);
+    border-radius: 3px; transform: scaleX(0); transform-origin: left; transition: transform .7s ease; transition-delay: calc(var(--d, 0) * 1ms + 450ms); z-index: -1; }
+  .slide.active .hl::after { transform: scaleX(1); }
+  .beige .hl { color: var(--red); } .beige .hl::after { background: rgba(181,33,50,.14); }
+
+  .card { background: #fff; border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,.28); padding: 12px; }
+  .card img { display: block; width: 100%; height: auto; border-radius: 8px; }
+  .footer { position: absolute; left: 72px; right: 72px; bottom: 26px; display: flex; justify-content: space-between;
+    font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; opacity: .55; font-weight: 600; }
+
+  /* stat tiles */
+  .stats { display: flex; gap: 18px; }
+  .stat { flex: 1; background: rgba(255,255,255,.06); border: 1px solid rgba(241,236,229,.14); border-radius: 14px; padding: 18px 20px; }
+  .stat .v { font-size: 46px; font-weight: 800; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 14px; margin-top: 8px; color: var(--muted-l); font-weight: 500; }
+  .beige .stat { background: #fff; border-color: rgba(37,41,43,.08); } .beige .stat .v { color: var(--red); } .beige .stat .l { color: #5c6366; }
+
+  /* split bars */
+  .bars { display: grid; gap: 14px; }
+  .bar-row { display: grid; grid-template-columns: 110px 1fr 120px; align-items: center; gap: 14px; font-weight: 600; font-size: 16px; }
+  .track { height: 16px; background: rgba(255,255,255,.08); border-radius: 99px; overflow: hidden; }
+  .fill { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--gold), #f7dd8a); transition: width 1.2s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--d, 0) * 1ms); }
+  .bar-row .val { text-align: right; color: var(--gold); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .bar-row .val small { color: var(--muted-l); font-weight: 600; margin-left: 6px; }
+
+  /* insight list */
+  .points { display: grid; gap: 20px; }
+  .pt { display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: start; background: rgba(255,255,255,.05);
+    border: 1px solid rgba(241,236,229,.12); border-radius: 14px; padding: 22px 24px; }
+  .pt .ic { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; background: rgba(242,201,76,.14); color: var(--gold); }
+  .pt .ic svg { width: 26px; height: 26px; }
+  .pt b { display: block; font-size: 20px; margin-bottom: 4px; }
+  .pt p { font-size: 18px; line-height: 1.5; color: var(--muted-l); }
+  .pt p .hl, .pt b .hl { color: var(--gold); }
+
+  /* nav */
+  .nav { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center;
+    background: rgba(18,32,28,.82); backdrop-filter: blur(8px); padding: 6px; border-radius: 12px; border: 1px solid rgba(241,236,229,.14); z-index: 10; }
+  .nav button { background: transparent; color: var(--beige); border: 0; height: 36px; min-width: 40px; padding: 0 12px; border-radius: 8px; font: 600 14px Inter, sans-serif; cursor: pointer; }
+  .nav button:hover:not(:disabled) { background: rgba(241,236,229,.1); }
+  .nav button:disabled { opacity: .3; cursor: default; }
+  .nav .count { min-width: 64px; text-align: center; font: 600 13px Inter, sans-serif; opacity: .75; font-variant-numeric: tabular-nums; }
+  #progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--gold); transition: width .3s; z-index: 10; }
+  .dots { position: absolute; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="viewport"><div id="stage">
+
+  <!-- 1 Cover -->
+  <section class="slide beige" style="padding:0">
+    <div style="position:absolute;left:72px;top:96px;width:520px">
+      <h1 class="a left" style="font-size:72px;line-height:1;color:var(--ink);--d:100">Dr. Mohamed</h1>
+      <h1 class="a left" style="font-size:72px;line-height:1.05;color:var(--green-2);--d:250">Yousef</h1>
+      <div class="a" style="width:64px;height:4px;background:var(--red);margin:36px 0 30px;--d:400"></div>
+      <div class="a" style="font-size:14px;letter-spacing:3px;color:#7b8285;line-height:2.2;--d:500">LECTURER OF PATHOLOGY &amp; HISTOLOGY<br>ENT SPECIALIST</div>
+      <img class="a zoom" src="logo.png" alt="Logo" style="width:120px;margin:28px 0 30px;border-radius:10px;--d:650">
+      <div class="a" style="font-size:20px;letter-spacing:3px;font-weight:700;color:var(--ink);--d:800">Social Media Analysis &amp; Report</div>
+    </div>
+    <div class="a zoom" style="position:absolute;right:-70px;top:30px;width:660px;height:660px;border-radius:50%;background:#d9d3cb;--d:0"></div>
+    <div class="a zoom" style="position:absolute;right:30px;top:120px;width:480px;height:480px;border-radius:50%;background:var(--green-2);--d:150"></div>
+    <svg class="a" style="position:absolute;right:20px;top:40px;--d:300" width="560" height="420" viewBox="0 0 560 420" fill="none"><path d="M40 300 C 120 40, 400 0, 540 160" stroke="#B52132" stroke-width="4" stroke-linecap="round"/></svg>
+    <img class="a" src="image1.png" alt="Dr. Mohamed Yousef" style="position:absolute;right:110px;bottom:0;height:640px;--d:350">
+    <div class="footer" style="color:var(--ink)"><span>Dr. Mohamed Yousef</span><span>01</span></div>
+  </section>
+
+  <!-- 2 Section -->
+  <section class="slide green" style="padding:0">
+    <div style="position:absolute;inset:0 0 0 auto;width:440px;background:var(--beige)" class="a right"></div>
+    <div style="position:absolute;left:72px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;width:640px">
+      <div class="kicker a" style="--d:150">Section 02</div>
+      <h2 class="a" style="font-size:68px;--d:250">Social Media Overview</h2>
+      <p class="a" style="font-size:20px;color:var(--muted-l);margin-top:8px;--d:400">TikTok · Instagram · Facebook</p>
+    </div>
+    <img class="a zoom" src="logo.png" alt="Logo" style="position:absolute;right:90px;top:250px;width:260px;--d:500">
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 3 Executive summary -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Executive Summary</div>
+    <h2 class="a" style="--d:120"><span class="hl" style="--d:120">10 videos</span> · 3 platforms · <span class="hl" style="--d:120">~<span class="num" data-to="189">189</span>K</span> views</h2>
+    <div style="display:grid;grid-template-columns:520px 1fr;gap:40px;margin-top:26px;align-items:start">
+      <div>
+        <p class="a" style="font-size:18px;line-height:1.5;color:var(--muted-l);margin-bottom:22px;--d:250">Views are split almost evenly across the three platforms.</p>
+        <div class="bars">
+          <div class="bar-row a" style="--d:350"><span>TikTok</span><div class="track"><div class="fill" data-w="96.9" style="--d:500"></div></div><span class="val"><span class="num" data-to="62">62</span>K<small>33%</small></span></div>
+          <div class="bar-row a" style="--d:450"><span>Instagram</span><div class="track"><div class="fill" data-w="100" style="--d:600"></div></div><span class="val"><span class="num" data-to="64">64</span>K<small>34%</small></span></div>
+          <div class="bar-row a" style="--d:550"><span>Facebook</span><div class="track"><div class="fill" data-w="98.4" style="--d:700"></div></div><span class="val"><span class="num" data-to="63">63</span>K<small>33%</small></span></div>
+        </div>
+      </div>
+      <div class="card a right" style="--d:500"><img src="image2.png" alt="Views dashboard"></div>
+    </div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 4 Facebook visits & follows -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Facebook</div>
+    <h2 class="a" style="--d:120">Profile Visits &amp; Follows</h2>
+    <div class="stats" style="max-width:560px;margin:10px 0 28px">
+      <div class="stat a" style="--d:250"><div class="v"><span class="num" data-to="6.2" data-dec="1">6.2</span>K</div><div class="l">Facebook visits</div></div>
+      <div class="stat a" style="--d:350"><div class="v"><span class="num" data-to="724">724</span></div><div class="l">Facebook follows</div></div>
+    </div>
+    <div class="card a zoom" style="max-width:940px;--d:450"><img src="image3.png" alt="Facebook visits and follows charts"></div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 5 Instagram consistency -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Instagram</div>
+    <h2 class="a" style="--d:120">The most consistent platform</h2>
+    <p class="lead a" style="--d:220">Instagram delivers <span class="hl" style="--d:220">3.4K–5.1K views</span> on nearly every post, and it is the best platform for <span class="hl" style="--d:220">shares</span> and <span class="hl" style="--d:220">saves</span>.</p>
+    <div class="card a zoom" style="margin-top:28px;max-width:860px;--d:400"><img src="image4.png" alt="Views chart"></div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 6 Instagram visits & follows -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Instagram</div>
+    <h2 class="a" style="--d:120">Profile Visits &amp; Follows</h2>
+    <div class="stats" style="max-width:560px;margin:10px 0 28px">
+      <div class="stat a" style="--d:250"><div class="v"><span class="num" data-to="4.3" data-dec="1">4.3</span>K</div><div class="l">Instagram profile visits</div></div>
+      <div class="stat a" style="--d:350"><div class="v"><span class="num" data-to="1.5" data-dec="1">1.5</span>K</div><div class="l">Instagram follows</div></div>
+    </div>
+    <div class="card a zoom" style="max-width:940px;--d:450"><img src="image5.png" alt="Instagram visits and follows charts"></div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 7 Posts -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Content</div>
+    <h2 class="a" style="--d:120">Published Videos</h2>
+    <div style="display:grid;gap:14px;max-width:640px;margin:0 auto">
+      <div class="card a left" style="padding:8px;--d:250"><img src="image6.png" alt="Videos 1–5"></div>
+      <div class="card a right" style="padding:8px;--d:400"><img src="image7.png" alt="Videos 6–10"></div>
+    </div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 8 Video metrics -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Performance</div>
+    <h2 class="a" style="--d:120">Video Metrics</h2>
+    <div class="stats" style="margin:18px 0 18px">
+      <div class="stat a" style="--d:200"><div class="v"><span class="num" data-to="84.4" data-dec="1">84.4</span>K</div><div class="l">Video views</div></div>
+      <div class="stat a" style="--d:280"><div class="v"><span class="num" data-to="3.2" data-dec="1">3.2</span>K</div><div class="l">Profile views</div></div>
+      <div class="stat a" style="--d:360"><div class="v"><span class="num" data-to="3.9" data-dec="1">3.9</span>K</div><div class="l">Likes</div></div>
+    </div>
+    <div class="stats" style="margin-bottom:26px">
+      <div class="stat a" style="--d:440"><div class="v"><span class="num" data-to="332">332</span></div><div class="l">Comments</div></div>
+      <div class="stat a" style="--d:520"><div class="v"><span class="num" data-to="589">589</span></div><div class="l">Shares</div></div>
+      <div class="stat a" style="--d:600"><div class="v"><span class="num" data-to="1.4" data-dec="1">1.4</span>K</div><div class="l">Total followers</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:center">
+      <div class="card a" style="padding:6px;--d:700"><img src="image8.png" alt="Video metrics dashboard"></div>
+      <div class="card a" style="padding:6px;--d:780"><img src="image9.png" alt="Total followers"></div>
+    </div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 9 Engagement quality -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Engagement Quality</div>
+    <h2 class="a" style="--d:120">Reach is strong. Interaction is still building.</h2>
+    <div class="points" style="margin-top:20px">
+      <div class="pt a" style="--d:250"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></div>
+        <div><b>Shares</b><p>Instagram is the only platform where content gets shared. Outside the viral post, shares are <span class="hl" style="--d:250">1–30 per video</span>. Content isn't yet built to be sent to friends and family.</p></div></div>
+      <div class="pt a" style="--d:400"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+        <div><b>Saves</b><p>Instagram saves of <span class="hl" style="--d:400">9–28 per video</span> show some reference value in the content, but this is low relative to <span class="hl" style="--d:400">~4K views</span>.</p></div></div>
+      <div class="pt a" style="--d:550"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></div>
+        <div><b>Likes</b><p>TikTok likes spike with views, so they are driven by reach, not by a loyal audience.</p></div></div>
+    </div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 10 Key insights -->
+  <section class="slide green">
+    <div class="kicker a" style="--d:50">Key Insights</div>
+    <div style="display:grid;grid-template-columns:330px 1fr;gap:36px;margin-top:6px;align-items:start">
+      <div class="a left" style="background:var(--beige);color:var(--ink);border-radius:16px;padding:28px 26px;--d:150">
+        <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--red);font-weight:700">Best Timing</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:58px;line-height:1.05;margin:14px 0 8px;color:var(--red)">7:30 – 8:30</div>
+        <div style="font-size:16px;color:#5c6366;line-height:1.5">The best posting window is between 7:30 and 8:30.</div>
+      </div>
+      <div class="points">
+        <div class="pt a" style="--d:300"><div class="ic" style="font-weight:800;font-size:15px">TT</div>
+          <div><b>TikTok</b><p>Highest like rate per view, but the audience is unpredictable. Views swing from <span class="hl" style="--d:300">456</span> to <span class="hl" style="--d:300">31.9K</span> for similar content.</p></div></div>
+        <div class="pt a" style="--d:450"><div class="ic" style="font-weight:800;font-size:15px">IG</div>
+          <div><b>Instagram is the "engine"</b><p>Predictable reach and nearly all of the shares (<span class="hl" style="--d:450"><span class="num" data-to="481">481</span></span>) and saves (<span class="hl" style="--d:450"><span class="num" data-to="236">236</span></span>).</p></div></div>
+        <div class="pt a" style="--d:600"><div class="ic" style="font-weight:800;font-size:15px">FB</div>
+          <div><b>Facebook</b><p>Solid reach, but audiences barely engage (about <span class="hl" style="--d:600">1.5% likes</span>, <span class="hl" style="--d:600">1–2 shares</span> per post). It gives visibility, not interaction.</p></div></div>
+      </div>
+    </div>
+    <div class="footer"><span>Dr. Mohamed Yousef</span><span>02</span></div>
+  </section>
+
+  <!-- 11 Thank you -->
+  <section class="slide beige" style="padding:0;background:#e9e4dc url('image10.jpeg') center/cover no-repeat">
+    <div style="position:absolute;left:96px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center">
+      <h1 class="a left" style="font-size:110px;line-height:.95;color:var(--ink);--d:150">Thank</h1>
+      <h1 class="a left" style="font-size:110px;line-height:.95;color:var(--red);--d:320">You.</h1>
+    </div>
+  </section>
+
+</div></div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous">← Prev</button>
+  <span class="count" id="count"></span>
+  <button id="next" aria-label="Next">Next →</button>
+  <button id="fs" aria-label="Fullscreen" title="Fullscreen (F)">⛶</button>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const slides = [...document.querySelectorAll('.slide')];
+  const N = slides.length;
+  let i = 0;
+
+  function fit() {
+    const pad = 16, navH = 64;
+    const s = Math.min((innerWidth - pad * 2) / 1280, (innerHeight - navH - pad) / 720);
+    stage.style.transform = `scale(${s})`;
+    stage.parentElement.style.paddingBottom = navH - pad + 'px';
+  }
+  addEventListener('resize', fit); fit();
+
+  function countUp(el) {
+    const to = parseFloat(el.dataset.to), dec = parseInt(el.dataset.dec || '0', 10);
+    const start = performance.now(), dur = 1300;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { el.textContent = to.toFixed(dec); return; }
+    (function tick(now) {
+      const p = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (to * e).toFixed(dec);
+      if (p < 1) requestAnimationFrame(tick);
+    })(start);
+  }
+
+  function show(n) {
+    i = Math.max(0, Math.min(N - 1, n));
+    slides.forEach((s, k) => {
+      const on = k === i;
+      if (!on && s.classList.contains('active')) {
+        s.querySelectorAll('.fill').forEach(f => f.style.width = '0');
+      }
+      s.classList.toggle('active', on);
+    });
+    const cur = slides[i];
+    cur.querySelectorAll('.num').forEach(el => setTimeout(() => countUp(el), 350));
+    cur.querySelectorAll('.fill').forEach(f => requestAnimationFrame(() => f.style.width = f.dataset.w + '%'));
+    document.getElementById('count').textContent = `${i + 1} / ${N}`;
+    document.getElementById('progress').style.width = `${(i + 1) / N * 100}%`;
+    document.getElementById('prev').disabled = i === 0;
+    document.getElementById('next').disabled = i === N - 1;
+    history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.getElementById('next').onclick = () => show(i + 1);
+  document.getElementById('fs').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+  stage.addEventListener('click', e => { const r = stage.getBoundingClientRect(); show(e.clientX > r.left + r.width / 2 ? i + 1 : i - 1); });
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); show(i + 1); }
+    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+    if (e.key === 'Home') show(0); if (e.key === 'End') show(N - 1);
+    if (e.key.toLowerCase() === 'f') document.getElementById('fs').click();
+  });
+  let x0 = null;
+  addEventListener('touchstart', e => x0 = e.touches[0].clientX, { passive: true });
+  addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 40) show(dx < 0 ? i + 1 : i - 1); });
+  const h = parseInt(location.hash.slice(1), 10);
+  show(h >= 1 && h <= N ? h - 1 : 0);
+</script>
+</body>
+</html>
